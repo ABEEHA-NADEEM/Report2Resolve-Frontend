@@ -3,25 +3,27 @@ import "../styles/global.css"
 import logo from "../assets/logo.png"
 import apiFetch from "../api"
 
-// ⚠️ Replace with real UUIDs from your issue_status table
 const DEFAULT_STATUS_ID   = "5ade587e-e51a-4fd1-aa87-411d9268b3a4"
 const DEFAULT_LOCATION_ID = "a1c7b3de-9c32-4a6e-9c1c-2b5d72e1f9aa"
 
 export default function ReportIssue() {
 
-  const [image, setImage]           = useState(null)
-  const [imageFile, setImageFile]   = useState(null)
-  const [title, setTitle]           = useState("")
-  const [description, setDescription] = useState("")
-  const [remarks, setRemarks]       = useState("")
-  const [categoryId, setCategoryId] = useState("")
+  const [image, setImage]               = useState(null)
+  const [imageFile, setImageFile]       = useState(null)
+  const [title, setTitle]               = useState("")
+  const [description, setDescription]   = useState("")
+  const [remarks, setRemarks]           = useState("")
+  const [categoryId, setCategoryId]     = useState("")
   const [departmentId, setDepartmentId] = useState("")
-  const [categories, setCategories] = useState([])
-  const [departments, setDepartments] = useState([])
-  const [loading, setLoading]       = useState(false)
-  const [message, setMessage]       = useState(null)
+  const [categories, setCategories]     = useState([])
+  const [departments, setDepartments]   = useState([])
+  const [loading, setLoading]           = useState(false)
+  const [message, setMessage]           = useState(null)
 
-  // ✅ Load categories and departments from your actual Supabase tables
+  // ✅ null if guest, real UUID if logged in
+  const user   = JSON.parse(localStorage.getItem("user"))
+  const userId = user?.user_id || null
+
   useEffect(() => {
     apiFetch("/categories").then(setCategories).catch(console.error)
     apiFetch("/departments").then(setDepartments).catch(console.error)
@@ -52,7 +54,6 @@ export default function ReportIssue() {
     if (!departmentId)       return setMessage({ type: "error", text: "Select a department." })
 
     setLoading(true)
-
     try {
       let imageUrls = []
       if (imageFile) {
@@ -63,13 +64,13 @@ export default function ReportIssue() {
       const payload = {
         title,
         description,
-        category_id:        categoryId,
-        department_id:      departmentId,
-        location_id:        DEFAULT_LOCATION_ID,
-        user_id:            null,             // guest user
-        current_status_id:  DEFAULT_STATUS_ID,
-        remarks:            remarks || "Submitted by guest",
-        images:             imageUrls,
+        category_id:       categoryId,
+        department_id:     departmentId,
+        location_id:       DEFAULT_LOCATION_ID,
+        user_id:           userId,    // ✅ null for guest, UUID for logged in
+        current_status_id: DEFAULT_STATUS_ID,
+        remarks:           remarks || "Submitted by guest",
+        images:            imageUrls,
       }
 
       const data = await apiFetch("/create-issue", {
@@ -103,79 +104,48 @@ export default function ReportIssue() {
           Help us resolve problems faster by providing accurate details.
         </p>
 
+        {/* ✅ shows guest or real name */}
+        <p style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>
+          Submitting as: <strong>{user ? user.name : "Guest"}</strong>
+        </p>
+
         {message && (
           <p style={{ color: message.type === "error" ? "#e53e3e" : "#38a169", marginBottom: 12 }}>
             {message.text}
           </p>
         )}
 
-        {/* Upload */}
         <label className="upload-box">
           <input type="file" accept="image/*" onChange={handleImage}/>
-          {image
-            ? <img src={image} alt="preview"/>
-            : <span>📷 Click to upload image</span>
-          }
+          {image ? <img src={image} alt="preview"/> : <span>📷 Click to upload image</span>}
         </label>
 
-        {/* Title */}
-        <input
-          className="modern-input"
-          placeholder="Issue Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        <input className="modern-input" placeholder="Issue Title"
+          value={title} onChange={(e) => setTitle(e.target.value)}/>
 
-        {/* Description */}
-        <textarea
-          className="modern-input"
-          rows={4}
-          placeholder="Describe the issue..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <textarea className="modern-input" rows={4} placeholder="Describe the issue..."
+          value={description} onChange={(e) => setDescription(e.target.value)}/>
 
-        {/* Remarks */}
-        <input
-          className="modern-input"
-          placeholder="Any additional remarks (optional)"
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-        />
+        <input className="modern-input" placeholder="Any additional remarks (optional)"
+          value={remarks} onChange={(e) => setRemarks(e.target.value)}/>
 
-        {/* Category — loaded from DB */}
-        <select
-          className="modern-input"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-        >
+        <select className="modern-input" value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}>
           <option value="">Select Category</option>
           {categories.map((c) => (
-            <option key={c.category_id} value={c.category_id}>
-              {c.category_name}
-            </option>
+            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
           ))}
         </select>
 
-        {/* Department — loaded from DB */}
-        <select
-          className="modern-input"
-          value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}
-        >
+        <select className="modern-input" value={departmentId}
+          onChange={(e) => setDepartmentId(e.target.value)}>
           <option value="">Select Department</option>
           {departments.map((d) => (
-            <option key={d.department_id} value={d.department_id}>
-              {d.department_name}
-            </option>
+            <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
           ))}
         </select>
 
-        <button
-          className="primary-btn report-btn"
-          onClick={handleSubmit}
-          disabled={loading}
-        >
+        <button className="primary-btn report-btn" onClick={handleSubmit} disabled={loading}>
           {loading ? "Submitting..." : "Submit Issue"}
         </button>
 
