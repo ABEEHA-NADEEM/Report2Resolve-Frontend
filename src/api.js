@@ -1,10 +1,9 @@
 const BASE_URL = import.meta.env.PROD
-  ? "https://report2-resolve-backend.vercel.app"  // ✅ production backend
-  : "/api"                                          // ✅ local dev via proxy
-
+  ? "https://report2-resolve-backend.vercel.app"
+  : "/api";
 
 const apiFetch = async (endpoint, options = {}) => {
-  const response = await fetch(`/api${endpoint}`, {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {  // ✅ use BASE_URL here
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
