@@ -39,7 +39,10 @@ export default function ReportIssue() {
   const uploadImage = async (file) => {
     const formData = new FormData()
     formData.append("file", file)
-    const res = await fetch("/api/upload-image", { method: "POST", body: formData })
+    const res = await fetch("https://report2-resolve-backend.vercel.app/upload-image", {
+  method: "POST",
+  body: formData
+})
     if (!res.ok) throw new Error("Image upload failed")
     const data = await res.json()
     return data.url
