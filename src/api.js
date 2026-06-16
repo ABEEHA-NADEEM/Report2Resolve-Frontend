@@ -1,4 +1,3 @@
-// api.js
 const BASE_URL = "https://report2-resolve-backend-8i4bwosfz.vercel.app";
 
 const apiFetch = async (endpoint, options = {}) => {
