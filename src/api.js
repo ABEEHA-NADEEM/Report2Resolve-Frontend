@@ -1,9 +1,7 @@
-const BASE_URL = import.meta.env.PROD
-  ? "https://report2-resolve-backend-8i4bwosfz.vercel.app"  
-  : "http://127.0.0.1:8000";
+// api.js
+const BASE_URL = "https://report2-resolve-backend-8i4bwosfz.vercel.app";
 
 const apiFetch = async (endpoint, options = {}) => {
-
   const isFormData = options.body instanceof FormData;
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
