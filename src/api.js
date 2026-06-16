@@ -1,5 +1,5 @@
 const BASE_URL = import.meta.env.PROD
-  ? "https://report2-resolve-backend.vercel.app"
+  ? "https://report2-resolve-backend-8i4bwosfz.vercel.app"  
   : "http://127.0.0.1:8000";
 
 const apiFetch = async (endpoint, options = {}) => {
