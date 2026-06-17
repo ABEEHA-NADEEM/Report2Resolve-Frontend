@@ -18,15 +18,62 @@ export default function ReportIssue() {
   const [categories, setCategories]     = useState([])
   const [departments, setDepartments]   = useState([])
   const [loading, setLoading]           = useState(false)
+  const [loadingData, setLoadingData]   = useState(true)
   const [message, setMessage]           = useState(null)
+  const [apiError, setApiError]         = useState(null)
 
   // ✅ null if guest, real UUID if logged in
   const user   = JSON.parse(localStorage.getItem("user"))
   const userId = user?.user_id || null
 
   useEffect(() => {
-    apiFetch("/categories").then(setCategories).catch(console.error)
-    apiFetch("/departments").then(setDepartments).catch(console.error)
+    const fetchData = async () => {
+      try {
+        setLoadingData(true)
+        setApiError(null)
+        
+        console.log("📥 Fetching categories and departments...")
+
+        // Fetch categories
+        try {
+          const categoriesData = await apiFetch("/categories")
+          console.log("✅ Categories received:", categoriesData)
+          if (Array.isArray(categoriesData)) {
+            setCategories(categoriesData)
+          } else {
+            console.warn("❌ Categories not an array:", categoriesData)
+            setApiError("Failed to load categories")
+          }
+        } catch (catErr) {
+          console.error("❌ Categories error:", catErr)
+          setApiError(catErr.message)
+        }
+
+        // Fetch departments
+        try {
+          const departmentsData = await apiFetch("/departments")
+          console.log("✅ Departments received:", departmentsData)
+          if (Array.isArray(departmentsData)) {
+            setDepartments(departmentsData)
+          } else {
+            console.warn("❌ Departments not an array:", departmentsData)
+            setApiError("Failed to load departments")
+          }
+        } catch (deptErr) {
+          console.error("❌ Departments error:", deptErr)
+          setApiError(deptErr.message)
+        }
+
+        setLoadingData(false)
+
+      } catch (err) {
+        console.error("❌ Data fetch error:", err)
+        setApiError(err.message)
+        setLoadingData(false)
+      }
+    }
+
+    fetchData()
   }, [])
 
   const handleImage = (e) => {
@@ -36,26 +83,35 @@ export default function ReportIssue() {
     }
   }
 
-  // ✅ FIX: Use FormData with apiFetch for image uploads
+  // ✅ Upload image with proper error handling
   const uploadImage = async (file) => {
     try {
       const formData = new FormData()
       formData.append("file", file)
 
-      // Use raw fetch for FormData (apiFetch is for JSON)
       const BASE_URL = "https://report2-resolve-backend-8i4bwosfz.vercel.app"
+      console.log(`📤 Uploading image to: ${BASE_URL}/upload-image`)
+      
       const res = await fetch(`${BASE_URL}/upload-image`, {
         method: "POST",
         body: formData
       })
 
+      console.log(`Response status: ${res.status}`)
+
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || "Image upload failed")
+        console.error("❌ Upload response error:", error)
+        throw new Error(error.error || `Upload failed with status ${res.status}`)
       }
 
       const data = await res.json()
       console.log("✅ Image uploaded:", data.url)
+      
+      if (!data.url) {
+        throw new Error("No URL returned from upload")
+      }
+
       return data.url
 
     } catch (err) {
@@ -76,9 +132,10 @@ export default function ReportIssue() {
     try {
       let imageUrls = []
       if (imageFile) {
-        console.log("📤 Uploading image...")
+        console.log("📤 Starting image upload...")
         const url = await uploadImage(imageFile)
         imageUrls = [url]
+        console.log("✅ Image URL ready:", url)
       }
 
       const payload = {
@@ -87,7 +144,7 @@ export default function ReportIssue() {
         category_id:       categoryId,
         department_id:     departmentId,
         location_id:       DEFAULT_LOCATION_ID,
-        user_id:           userId,    // ✅ null for guest, UUID for logged in
+        user_id:           userId,
         current_status_id: DEFAULT_STATUS_ID,
         remarks:           remarks || "Submitted by guest",
         images:            imageUrls,
@@ -100,19 +157,22 @@ export default function ReportIssue() {
         body: JSON.stringify(payload),
       })
 
+      console.log("📩 Issue creation response:", data)
+
       if (data.ok) {
-        setMessage({ type: "success", text: "Issue submitted successfully! 🎉" })
+        setMessage({ type: "success", text: "✅ Issue submitted successfully! 🎉" })
         setTitle(""); setDescription(""); setRemarks("")
         setCategoryId(""); setDepartmentId("")
         setImage(null); setImageFile(null)
-        console.log("✅ Issue created:", data.issue_id)
+        console.log("✅ Issue created with ID:", data.issue_id)
       } else {
         setMessage({ type: "error", text: data.error || "Submission failed." })
+        console.error("❌ Submission error:", data.error)
       }
 
     } catch (err) {
       console.error("❌ Submission error:", err)
-      setMessage({ type: "error", text: err.message })
+      setMessage({ type: "error", text: `Error: ${err.message}` })
     } finally {
       setLoading(false)
     }
@@ -133,6 +193,14 @@ export default function ReportIssue() {
           Submitting as: <strong>{user ? user.name : "Guest"}</strong>
         </p>
 
+        {/* ❌ Show API errors */}
+        {apiError && (
+          <p style={{ color: "#e53e3e", marginBottom: 12, fontSize: 13 }}>
+            ⚠️ Failed to load options: {apiError}
+          </p>
+        )}
+
+        {/* ✅ Show messages */}
         {message && (
           <p style={{ color: message.type === "error" ? "#e53e3e" : "#38a169", marginBottom: 12 }}>
             {message.text}
@@ -153,24 +221,42 @@ export default function ReportIssue() {
         <input className="modern-input" placeholder="Any additional remarks (optional)"
           value={remarks} onChange={(e) => setRemarks(e.target.value)}/>
 
+        {/* Categories Dropdown */}
         <select className="modern-input" value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}>
-          <option value="">Select Category</option>
-          {categories.map((c) => (
-            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
-          ))}
+          onChange={(e) => setCategoryId(e.target.value)} disabled={loadingData}>
+          <option value="">
+            {loadingData ? "Loading categories..." : "Select Category"}
+          </option>
+          {categories.length > 0 ? (
+            categories.map((c) => (
+              <option key={c.category_id} value={c.category_id}>
+                {c.category_name}
+              </option>
+            ))
+          ) : (
+            <option disabled>No categories available</option>
+          )}
         </select>
 
+        {/* Departments Dropdown */}
         <select className="modern-input" value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}>
-          <option value="">Select Department</option>
-          {departments.map((d) => (
-            <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
-          ))}
+          onChange={(e) => setDepartmentId(e.target.value)} disabled={loadingData}>
+          <option value="">
+            {loadingData ? "Loading departments..." : "Select Department"}
+          </option>
+          {departments.length > 0 ? (
+            departments.map((d) => (
+              <option key={d.department_id} value={d.department_id}>
+                {d.department_name}
+              </option>
+            ))
+          ) : (
+            <option disabled>No departments available</option>
+          )}
         </select>
 
-        <button className="primary-btn report-btn" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Submitting..." : "Submit Issue"}
+        <button className="primary-btn report-btn" onClick={handleSubmit} disabled={loading || loadingData}>
+          {loadingData ? "Loading..." : loading ? "Submitting..." : "Submit Issue"}
         </button>
 
       </div>
