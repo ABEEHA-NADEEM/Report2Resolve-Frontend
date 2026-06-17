@@ -36,16 +36,32 @@ export default function ReportIssue() {
     }
   }
 
+  // ✅ FIX: Use FormData with apiFetch for image uploads
   const uploadImage = async (file) => {
-    const formData = new FormData()
-    formData.append("file", file)
-    const res = await fetch("https://report2-resolve-backend-8i4bwosfz.vercel.app/upload-image", {
-  method: "POST",
-  body: formData
-})
-    if (!res.ok) throw new Error("Image upload failed")
-    const data = await res.json()
-    return data.url
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      // Use raw fetch for FormData (apiFetch is for JSON)
+      const BASE_URL = "https://report2-resolve-backend-8i4bwosfz.vercel.app"
+      const res = await fetch(`${BASE_URL}/upload-image`, {
+        method: "POST",
+        body: formData
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Image upload failed")
+      }
+
+      const data = await res.json()
+      console.log("✅ Image uploaded:", data.url)
+      return data.url
+
+    } catch (err) {
+      console.error("❌ Image upload error:", err)
+      throw err
+    }
   }
 
   const handleSubmit = async () => {
@@ -60,6 +76,7 @@ export default function ReportIssue() {
     try {
       let imageUrls = []
       if (imageFile) {
+        console.log("📤 Uploading image...")
         const url = await uploadImage(imageFile)
         imageUrls = [url]
       }
@@ -76,6 +93,8 @@ export default function ReportIssue() {
         images:            imageUrls,
       }
 
+      console.log("📝 Creating issue with payload:", payload)
+      
       const data = await apiFetch("/create-issue", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -86,11 +105,13 @@ export default function ReportIssue() {
         setTitle(""); setDescription(""); setRemarks("")
         setCategoryId(""); setDepartmentId("")
         setImage(null); setImageFile(null)
+        console.log("✅ Issue created:", data.issue_id)
       } else {
         setMessage({ type: "error", text: data.error || "Submission failed." })
       }
 
     } catch (err) {
+      console.error("❌ Submission error:", err)
       setMessage({ type: "error", text: err.message })
     } finally {
       setLoading(false)
