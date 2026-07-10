@@ -8,9 +8,13 @@ import Auth from "./screens/Auth"
 import AdminDashboard from "./screens/AdminDashboard"
 import DeptDashboard from "./screens/DeptDashboard"
 
+const API_URL = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL || "https://report2-resolve-backend.vercel.app"
+  : "/api"
+
 function App() {
   useEffect(() => {
-    fetch("/api/")
+    fetch(`${API_URL}/`)
       .then((res) => res.json())
       .then((data) => console.log("✅ FastAPI Connected:", data))
       .catch((err) => console.error("❌ FastAPI Failed:", err))

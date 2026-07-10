@@ -1,9 +1,7 @@
-const BASE_URL = import.meta.env.PROD
-  ? "https://report2-resolve-backend.vercel.app"
-  : "/api";
+const API_URL = "https://report2-resolve-backend.vercel.app";
 
 const apiFetch = async (endpoint, options = {}) => {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {  // ✅ use BASE_URL here
+  const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -11,12 +9,12 @@ const apiFetch = async (endpoint, options = {}) => {
     ...options,
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || "API request failed");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "API request failed");
   }
 
-  return response.json();
+  return res.json();
 };
 
 export default apiFetch;
