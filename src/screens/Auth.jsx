@@ -65,7 +65,7 @@ export default function Auth() {
         redirectByRole(data.role)
       }
 
-      // ── CITIZEN SIGNUP ──
+      // ── REPORTER SIGNUP ──
       else if (mode === "citizen-signup") {
         const data = await apiFetch("/signup", {
           method: "POST",
@@ -76,7 +76,7 @@ export default function Auth() {
         redirectByRole(data.role)
       }
 
-      // ── DEPARTMENT SIGNUP ──
+      // ── RESOLVER SIGNUP ──
       else if (mode === "dept-signup") {
         const data = await apiFetch("/dept-signup", {
           method: "POST",
@@ -110,20 +110,20 @@ export default function Auth() {
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           {["login", "citizen-signup", "dept-signup"].map((m) => (
             <button key={m} onClick={() => switchMode(m)} style={{
-              flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
-              cursor: "pointer", fontWeight: 600,
+              flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+              cursor: "pointer", fontWeight: 600, fontSize: 13,
               background: mode === m ? "#3b82f6" : "#f0f0f0",
               color:      mode === m ? "#fff"    : "#333",
             }}>
-              {m === "login" ? "Login" : m === "citizen-signup" ? "Citizen" : "Department"}
+              {m === "login" ? "Login" : m === "citizen-signup" ? "Register as Reporter" : "Register as Resolver"}
             </button>
           ))}
         </div>
 
         <p style={{ fontSize: 13, color: "#888", marginBottom: 12, textAlign: "center" }}>
           {mode === "login"          && "Login to your account"}
-          {mode === "citizen-signup" && "Create a citizen account"}
-          {mode === "dept-signup"    && "Register as department staff — admin will approve"}
+          {mode === "citizen-signup" && "Create a reporter account"}
+          {mode === "dept-signup"    && "Register as a resolver — admin will approve"}
         </p>
 
         {error   && <p style={{ color: "#e53e3e", marginBottom: 10, fontSize: 14 }}>{error}</p>}

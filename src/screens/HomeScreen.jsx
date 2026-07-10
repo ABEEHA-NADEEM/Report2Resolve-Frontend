@@ -10,11 +10,6 @@ export default function Home() {
 
       <header className="home-header">
         <img src={logo} alt="Report2Resolve Logo" className="home-logo" />
-        <nav className="nav-links">
-          {/* ✅ both go to /auth */}
-          <button className="nav-btn secondary" onClick={() => navigate("/auth")}>Login</button>
-          <button className="nav-btn secondary" onClick={() => navigate("/auth")}>Sign Up</button>
-        </nav>
       </header>
 
       <section className="hero-section">
@@ -29,7 +24,7 @@ export default function Home() {
             Report an Issue
           </button>
           <button className="secondary-btn" onClick={() => navigate("/auth")}>
-            Login / Sign Up
+            Login
           </button>
         </div>
       </section>
